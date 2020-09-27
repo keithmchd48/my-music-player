@@ -6,6 +6,13 @@
     <main>
       <section class="player">
         <h2 class="song-title">{{ current.title }} - <span>{{ current.artist }}</span></h2>
+        <div class="settings">
+          <button class="next" @click="skip5s('backward')">Back-up 5s</button>
+          <div class="time_slider">
+            {{displayCurrentTime}}   <input type="range" min="0" max="100" v-model="percentCurrentTime"> {{dispayDuration}}
+          </div>
+          <button class="next" @click="skip5s('forward')">Forward 5s</button>
+        </div>
         <div class="controls">
           <button class="prev" @click="previousSong">Prev</button>
           <button class="play" v-if="!isPlaying" @click="playSong">Play</button>
@@ -28,13 +35,32 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, watch, computed } from 'vue'
 export default {
   name: 'App',
   setup () {
+    // prettify time from seconds to "mins:seconds"
+    function prettyTime(time) {
+      let mins = Math.floor(time / 60)
+      let seconds = Math.round(time % 60)
+      seconds = seconds < 10 ? '0' + seconds : seconds
+      return `${mins}:${seconds}`
+    }
     const current = ref({})
     const index = ref(0)
     const isPlaying = ref(false)
+    const player = ref(new Audio())
+    const currentTime = ref(0)
+    const displayCurrentTime = computed(function () {
+      return prettyTime(currentTime.value)
+    })
+    const percentCurrentTime = computed(function () {
+      return (currentTime.value / songDuration.value) * 100
+    })
+    const songDuration = ref(0)
+    const dispayDuration = computed(function () {
+      return prettyTime(songDuration.value)
+    })
     const songs = ref([
       {
         title: 'A Window to the past',
@@ -57,8 +83,17 @@ export default {
         src: require('./assets/o-children.mp3')
       }
     ])
-    const player = ref(new Audio())
 
+    // as the song proceeds, update the currentTime of the song
+    player.value.addEventListener('timeupdate', function () {
+      currentTime.value = player.value.currentTime
+    })
+    // when the song changes, the songDuration variable changes
+    watch(current, function () {
+      player.value.onloadedmetadata = function() {
+        songDuration.value = player.value.duration
+      };
+    })
     current.value = songs.value[index.value]
     player.value.src = current.value.src
 
@@ -96,14 +131,23 @@ export default {
       current.value = songs.value[index.value]
       playSong(current.value)
     }
+
+    function skip5s(skip) {
+      if (skip === 'forward') player.value.currentTime += 5
+      else player.value.currentTime -= 5
+    }
     return {
       current,
       isPlaying,
       songs,
+      dispayDuration,
+      displayCurrentTime,
+      percentCurrentTime,
       playSong,
       pauseSong,
       nextSong,
-      previousSong
+      previousSong,
+      skip5s
     }
   },
   // data () {
@@ -267,5 +311,15 @@ export default {
   .playlist .song.playing {
     color: #FFF;
     background-image: linear-gradient(to right, #CC2E5D, #FF5858);
+  }
+  .settings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .time_slider {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 </style>
