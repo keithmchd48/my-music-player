@@ -7,10 +7,10 @@
       <section class="player">
         <h2 class="song-title">{{ current.title }} - <span>{{ current.artist }}</span></h2>
         <div class="controls">
-          <button class="prev" @click="previous">Prev</button>
-          <button class="play" v-if="!isPlaying" @click="play">Play</button>
-          <button class="pause" v-else @click="pause">Pause</button>
-          <button class="next" @click="next">Next</button>
+          <button class="prev" @click="previousSong">Prev</button>
+          <button class="play" v-if="!isPlaying" @click="playSong">Play</button>
+          <button class="pause" v-else @click="pauseSong">Pause</button>
+          <button class="next" @click="nextSong">Next</button>
         </div>
       </section>
       <section class="playlist">
@@ -18,7 +18,7 @@
         <button class="song"
                 v-for="song in songs"
                 :key="song.src"
-                @click="play(song)"
+                @click="playSong(song)"
                 :class="{'playing': (song.src == current.src)}">
           {{ song.title }} - {{ song.artist }}
         </button>
@@ -28,75 +28,150 @@
 </template>
 
 <script>
-
+import { ref } from 'vue'
 export default {
   name: 'App',
-  data () {
-    return {
-      current: {},
-      index: 0,
-      isPlaying: false,
-      songs: [
-        {
-          title: 'A Window to the past',
-          artist: 'John Williams',
-          src: require('./assets/a-window-to-the-past.mp3')
-        },
-        {
-          title: 'Nobody But Me',
-          artist: 'The Human Beinz',
-          src: require('./assets/nobody-but-me.mp3')
-        },
-        {
-          title: 'The Other Side',
-          artist: 'Hugh Jackman & Zac Efron',
-          src: require('./assets/the-other-side.mp3')
-        }
-      ],
-      player: new Audio()
-    }
-  },
-  created () {
-    this.current = this.songs[this.index]
-    this.player.src = this.current.src
-    // this.player.play()
-  },
-  methods: {
-    play (song = null) {
+  setup () {
+    const current = ref({})
+    const index = ref(0)
+    const isPlaying = ref(false)
+    const songs = ref([
+      {
+        title: 'A Window to the past',
+        artist: 'John Williams',
+        src: require('./assets/a-window-to-the-past.mp3')
+      },
+      {
+        title: 'Nobody But Me',
+        artist: 'The Human Beinz',
+        src: require('./assets/nobody-but-me.mp3')
+      },
+      {
+        title: 'The Other Side',
+        artist: 'Hugh Jackman & Zac Efron',
+        src: require('./assets/the-other-side.mp3')
+      },
+      {
+        title: 'O Children',
+        artist: 'Nick Cave & The Bad Seeds',
+        src: require('./assets/o-children.mp3')
+      }
+    ])
+    const player = ref(new Audio())
+
+    current.value = songs.value[index.value]
+    player.value.src = current.value.src
+
+    function playSong (song = null) {
       if (song.src) {
-        this.current = song
-        this.player.src = song.src
+        current.value = song
+        player.value.src = song.src
       }
-      this.player.play()
+      player.value.play()
       // when current song ends, automatically switch to the next song in the songs array
-      this.player.addEventListener('ended', () => {
-        this.next()
+      player.value.addEventListener('ended', () => {
+        nextSong()
       })
-      this.isPlaying = true
-    },
-    pause () {
-      this.player.pause()
-      this.isPlaying = false
-    },
-    next () {
-      this.index++
-      // if the index has gone beyond the songs array length, the set index to first song in the array
-      if (this.index > this.songs.length - 1) {
-        this.index = 0
-      }
-      this.current = this.songs[this.index]
-      this.play(this.current)
-    },
-    previous () {
-      this.index--
-      // if the index has gone to negative integer, then set the index to last song in the array
-      if (this.index < 0) {
-        this.index = this.songs.length - 1
-      }
-      this.current = this.songs[this.index]
-      this.play(this.current)
+      isPlaying.value = true
     }
-  }
+    function nextSong () {
+     index.value++
+      // if the index has gone beyond the songs array length, the set index to first song in the array
+      if (index.value > songs.value.length - 1) {
+        index.value = 0
+      }
+      current.value = songs.value[index.value]
+      playSong(current.value)
+    }
+    function pauseSong () {
+      player.value.pause()
+      isPlaying.value = false
+    }
+    function previousSong () {
+      index.value--
+      // if the index has gone to negative integer, then set the index to last song in the array
+      if (index.value < 0) {
+        index.value = songs.value.length - 1
+      }
+      current.value = songs.value[index.value]
+      playSong(current.value)
+    }
+    return {
+      current,
+      isPlaying,
+      songs,
+      playSong,
+      pauseSong,
+      nextSong,
+      previousSong
+    }
+  },
+  // data () {
+  //   return {
+  //     current: {},
+  //     index: 0,
+  //     isPlaying: false,
+  //     songs: [
+  //       {
+  //         title: 'A Window to the past',
+  //         artist: 'John Williams',
+  //         src: require('./assets/a-window-to-the-past.mp3')
+  //       },
+  //       {
+  //         title: 'Nobody But Me',
+  //         artist: 'The Human Beinz',
+  //         src: require('./assets/nobody-but-me.mp3')
+  //       },
+  //       {
+  //         title: 'The Other Side',
+  //         artist: 'Hugh Jackman & Zac Efron',
+  //         src: require('./assets/the-other-side.mp3')
+  //       }
+  //     ],
+  //     player: new Audio()
+  //   }
+  // },
+  // created () {
+  //   this.current = this.songs[this.index]
+  //   this.player.src = this.current.src
+  //   // this.player.play()
+  // },
+  // methods: {
+    // play (song = null) {
+    //   if (song.src) {
+    //     this.current = song
+    //     this.player.src = song.src
+    //   }
+    //   this.player.play()
+    //   // when current song ends, automatically switch to the next song in the songs array
+    //   this.player.addEventListener('ended', () => {
+    //     this.next()
+    //   })
+    //   this.isPlaying = true
+    // },
+    // pause () {
+    //   this.player.pause()
+    //   this.isPlaying = false
+    // },
+    // next () {
+    //   this.index++
+    //   // if the index has gone beyond the songs array length, the set index to first song in the array
+    //   if (this.index > this.songs.length - 1) {
+    //     this.index = 0
+    //   }
+    //   this.current = this.songs[this.index]
+    //   this.play(this.current)
+    // },
+    // previous () {
+    //   this.index--
+    //   // if the index has gone to negative integer, then set the index to last song in the array
+    //   if (this.index < 0) {
+    //     this.index = this.songs.length - 1
+    //   }
+    //   this.current = this.songs[this.index]
+    //   this.play(this.current)
+    // }
+  // }
 }
 </script>
 
