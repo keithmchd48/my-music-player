@@ -9,7 +9,7 @@
         <div class="settings">
           <button class="next" @click="skip5s('backward')">Back-up 5s</button>
           <div class="time_slider">
-            {{displayCurrentTime}}   <input type="range" min="0" max="100" v-model="percentCurrentTime"> {{dispayDuration}}
+            {{displayCurrentTime}}   <input id="range" type="range" min="0" :max="songDuration" @change="seek" :value="currentTime" /> {{dispayDuration}}
           </div>
           <button class="next" @click="skip5s('forward')">Forward 5s</button>
         </div>
@@ -46,21 +46,27 @@ export default {
       seconds = seconds < 10 ? '0' + seconds : seconds
       return `${mins}:${seconds}`
     }
+    // current song from the "songs" array
     const current = ref({})
+    // index to keep track of "songs" array
     const index = ref(0)
+    // determine if the song is playing or paused
     const isPlaying = ref(false)
+    // the Web Audio API object
     const player = ref(new Audio())
+    // the current time in seconds of the song's position
     const currentTime = ref(0)
+    // prettify "currentTime"
     const displayCurrentTime = computed(function () {
       return prettyTime(currentTime.value)
     })
-    const percentCurrentTime = computed(function () {
-      return (currentTime.value / songDuration.value) * 100
-    })
+    // the total length of the song
     const songDuration = ref(0)
+    // prettify "songDuration"
     const dispayDuration = computed(function () {
       return prettyTime(songDuration.value)
     })
+    // all the songs in the array
     const songs = ref([
       {
         title: 'A Window to the past',
@@ -84,6 +90,10 @@ export default {
       }
     ])
 
+    // by default, set the current song as the first one in the array
+    current.value = songs.value[index.value]
+    player.value.src = current.value.src
+
     // as the song proceeds, update the currentTime of the song
     player.value.addEventListener('timeupdate', function () {
       currentTime.value = player.value.currentTime
@@ -91,12 +101,12 @@ export default {
     // when the song changes, the songDuration variable changes
     watch(current, function () {
       player.value.onloadedmetadata = function() {
+        // update the duration variable to the length of the selected song
         songDuration.value = player.value.duration
       };
     })
-    current.value = songs.value[index.value]
-    player.value.src = current.value.src
 
+    // using the Web Audio API object "player", we play the song by calling the .play() method on the object
     function playSong (song = null) {
       if (song.src) {
         current.value = song
@@ -109,6 +119,7 @@ export default {
       })
       isPlaying.value = true
     }
+    // switch to the next song in the array
     function nextSong () {
      index.value++
       // if the index has gone beyond the songs array length, the set index to first song in the array
@@ -131,18 +142,27 @@ export default {
       current.value = songs.value[index.value]
       playSong(current.value)
     }
-
+    // skip (either backwards or forwards) the current song by 5 seconds
     function skip5s(skip) {
       if (skip === 'forward') player.value.currentTime += 5
       else player.value.currentTime -= 5
+    }
+    // when user makes changes to the slider, we call this function
+    function seek(event) {
+      // change the "currentTime" property of the Web Audio API object
+      player.value.currentTime = event.target.value
+      // change the "currentTime" ref variable to target time
+      currentTime.value = event.target.value
     }
     return {
       current,
       isPlaying,
       songs,
+      songDuration,
       dispayDuration,
+      currentTime,
       displayCurrentTime,
-      percentCurrentTime,
+      seek,
       playSong,
       pauseSong,
       nextSong,
@@ -318,8 +338,12 @@ export default {
     align-items: center;
   }
   .time_slider {
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
+  }
+  #range {
+    width: 80%;
   }
 </style>
