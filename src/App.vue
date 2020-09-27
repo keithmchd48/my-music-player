@@ -90,10 +90,6 @@ export default {
       }
     ])
 
-    // by default, set the current song as the first one in the array
-    current.value = songs.value[index.value]
-    player.value.src = current.value.src
-
     // as the song proceeds, update the currentTime of the song
     player.value.addEventListener('timeupdate', function () {
       currentTime.value = player.value.currentTime
@@ -105,6 +101,10 @@ export default {
         songDuration.value = player.value.duration
       };
     })
+
+    // by default, set the current song as the first one in the array
+    current.value = songs.value[index.value]
+    player.value.src = current.value.src
 
     // using the Web Audio API object "player", we play the song by calling the .play() method on the object
     function playSong (song = null) {
