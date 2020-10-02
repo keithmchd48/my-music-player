@@ -87,6 +87,16 @@ export default {
         title: 'O Children',
         artist: 'Nick Cave & The Bad Seeds',
         src: require('./assets/o-children.mp3')
+      },
+      {
+        title: 'Come On Eileen',
+        artist: 'Dexys Midnight Runners',
+        src: require('./assets/come-on-eileen.mp3')
+      },
+      {
+        title: 'Heroes',
+        artist: 'David Bowie',
+        src: require('./assets/heroes-david-bowie.mp3')
       }
     ])
 
