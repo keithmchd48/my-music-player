@@ -1,27 +1,33 @@
 <template>
   <div id="app">
     <header>
-      <h1>My Playlist Player</h1>
+      <h1>My Playlist</h1>
     </header>
     <main>
       <section class="player">
-        <h2 class="song-title">{{ current.title }} - <span>{{ current.artist }}</span></h2>
-        <div class="settings">
-          <button class="next" @click="skip5s('backward')">Back-up 5s</button>
+        <div class="song">
+          <h2 class="song-title">{{ current.title }}</h2>
+          <span class="song-artist">{{ current.artist }}</span>
+        </div>
+        <div class="music-player">
           <div class="time_slider">
-            {{displayCurrentTime}}   <input id="range" type="range" min="0" :max="songDuration" @change="seek" :value="currentTime" /> {{dispayDuration}}
+            <span class="current-time">{{displayCurrentTime}}</span>
+            <AudioSlider :songDuration="songDuration" :seek="seek" :currentTime="currentTime"></AudioSlider>
+            <span class="duration-time">{{dispayDuration}}</span>
           </div>
-          <button class="next" @click="skip5s('forward')">Forward 5s</button>
+          <div class="skip-wrapper">
+            <button class="next skip-5" @click="skip5s('backward')">5s <i class="fas fa-angle-double-left"></i></button>
+            <button class="next skip-5" @click="skip5s('forward')"><i class="fas fa-angle-double-right"></i> 5s</button>
+          </div>
         </div>
         <div class="controls">
-          <button class="prev" @click="previousSong">Prev</button>
-          <button class="play" v-if="!isPlaying" @click="playSong">Play</button>
-          <button class="pause" v-else @click="pauseSong">Pause</button>
-          <button class="next" @click="nextSong">Next</button>
+          <button class="prev" @click="previousSong"><i class="fas fa-backward"></i></button>
+          <button class="play" v-if="!isPlaying" @click="playSong"><i class="fas fa-play"></i></button>
+          <button class="pause" v-else @click="pauseSong"><i class="fas fa-pause"></i></button>
+          <button class="next" @click="nextSong"><i class="fas fa-forward"></i></button>
         </div>
       </section>
       <section class="playlist">
-        <h3>The Playlist</h3>
         <button class="song"
                 v-for="song in songs"
                 :key="song.src"
@@ -36,6 +42,8 @@
 
 <script>
 import { ref, watch, computed } from 'vue'
+import songList from '@/songList'
+import AudioSlider from "@/components/AudioSlider";
 export default {
   name: 'App',
   setup () {
@@ -67,38 +75,7 @@ export default {
       return prettyTime(songDuration.value)
     })
     // all the songs in the array
-    const songs = ref([
-      {
-        title: 'A Window to the past',
-        artist: 'John Williams',
-        src: require('./assets/a-window-to-the-past.mp3')
-      },
-      {
-        title: 'Nobody But Me',
-        artist: 'The Human Beinz',
-        src: require('./assets/nobody-but-me.mp3')
-      },
-      {
-        title: 'The Other Side',
-        artist: 'Hugh Jackman & Zac Efron',
-        src: require('./assets/the-other-side.mp3')
-      },
-      {
-        title: 'O Children',
-        artist: 'Nick Cave & The Bad Seeds',
-        src: require('./assets/o-children.mp3')
-      },
-      {
-        title: 'Come On Eileen',
-        artist: 'Dexys Midnight Runners',
-        src: require('./assets/come-on-eileen.mp3')
-      },
-      {
-        title: 'Heroes',
-        artist: 'David Bowie',
-        src: require('./assets/heroes-david-bowie.mp3')
-      }
-    ])
+    const songs = ref([...songList])
 
     // as the song proceeds, update the currentTime of the song
     player.value.addEventListener('timeupdate', function () {
@@ -121,6 +98,7 @@ export default {
       if (song.src) {
         current.value = song
         player.value.src = song.src
+        index.value = current.value.id
       }
       player.value.play()
       // when current song ends, automatically switch to the next song in the songs array
@@ -177,7 +155,9 @@ export default {
       pauseSong,
       nextSong,
       previousSong,
-      skip5s
+      skip5s,
+      AudioSlider,
+      index
     }
   },
   // data () {
@@ -269,25 +249,37 @@ export default {
   main {
     width: 100%;
     max-width: 768px;
-    margin: 0 auto;
+    margin: 1rem auto;
     padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.2);
+  }
+  .song {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
   .song-title {
     color: #53565A;
     font-size: 32px;
     font-weight: 700;
-    text-transform: uppercase;
     text-align: center;
   }
-  .song-title span {
-    font-weight: 400;
-    font-style: italic;
+  .song-artist {
+    color: #9fa2a7;
+    font-size: 1rem;
   }
   .controls {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 30px 15px;
+  }
+  .music-player {
+    max-width: 81%;
+    margin: 0 auto;
+    margin-top: 1.5rem;
   }
   button {
     appearance: none;
@@ -299,23 +291,36 @@ export default {
   button:hover {
     opacity: 0.8;
   }
+  .skip-wrapper {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 auto;
+    max-width: 30%;
+  }
   .play, .pause {
-    font-size: 20px;
-    font-weight: 700;
-    padding: 15px 25px;
-    margin: 0px 15px;
-    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: #FE4880;
     color: #FFF;
-    background-color: #CC2E5D;
+    margin: 0 30px;
+    border: none;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 0 12px rgba(254, 72, 128, 0.6);
   }
   .next, .prev {
-    font-size: 16px;
-    font-weight: 700;
-    padding: 10px 20px;
-    margin: 0px 15px;
-    border-radius: 6px;
-    color: #FFF;
-    background-color: #FF5858;
+    background: none;
+    border: none;
+    appearance: none;
+    cursor: pointer;
+    outline: none;
+    font-size: 1rem;
+    color: #CCC;
   }
   .playlist {
     padding: 0px 30px;
@@ -342,18 +347,21 @@ export default {
     color: #FFF;
     background-image: linear-gradient(to right, #CC2E5D, #FF5858);
   }
-  .settings {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
   .time_slider {
     width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  #range {
-    width: 80%;
+  @media only screen and (max-width: 425px) {
+    .music-player {
+      max-width: 100%;
+    }
+    .current-time {
+      margin-right: 0.5rem;
+    }
+    .duration-time {
+      margin-left: 0.5rem;
+    }
   }
 </style>
