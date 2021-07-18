@@ -9,17 +9,10 @@
           <h2 class="song-title">{{ current.title }}</h2>
           <span class="song-artist">{{ current.artist }}</span>
         </div>
-        <div class="music-player">
-          <div class="time_slider">
-            <span class="current-time">{{displayCurrentTime}}</span>
-            <AudioSlider :songDuration="songDuration" :seek="seek" :currentTime="currentTime"></AudioSlider>
-            <span class="duration-time">{{displayDuration}}</span>
-          </div>
-          <div class="skip-wrapper">
-            <button class="next skip-5" @click="skip5s('backward')"><i class="fas fa-angle-double-left"></i> 5s</button>
-            <button class="next skip-5" @click="skip5s('forward')">5s <i class="fas fa-angle-double-right"></i></button>
-          </div>
-        </div>
+        <MusicPlayer :displayCurrentTime="displayCurrentTime" :displayDuration="displayDuration"
+                     @skip5s="skip5s">
+          <AudioSlider :songDuration="songDuration" :seek="seek" :currentTime="currentTime"></AudioSlider>
+        </MusicPlayer>
         <div class="controls">
           <button class="prev" @click="previousSong"><i class="fas fa-backward"></i></button>
           <button class="play" v-if="!isPlaying" @click="playSong"><i class="fas fa-play"></i></button>
@@ -45,10 +38,11 @@ import { ref, watch, computed, defineComponent } from 'vue'
 import songList from '@/songList'
 import AudioSlider from "@/components/AudioSlider";
 import usePrettify from '@/modules/prettify'
+import MusicPlayer from "@/components/MusicPlayer";
 
 export default defineComponent({
   name: 'App',
-  components: { AudioSlider },
+  components: { MusicPlayer, AudioSlider },
   setup () {
     const {prettyTime} = usePrettify()
 
@@ -212,11 +206,6 @@ export default defineComponent({
     align-items: center;
     padding: 30px 15px;
   }
-  .music-player {
-    max-width: 81%;
-    margin: 0 auto;
-    margin-top: 1.5rem;
-  }
   button {
     appearance: none;
     background: none;
@@ -226,12 +215,6 @@ export default defineComponent({
   }
   button:hover {
     opacity: 0.8;
-  }
-  .skip-wrapper {
-    display: flex;
-    justify-content: space-between;
-    margin: 0 auto;
-    max-width: 30%;
   }
   .play, .pause {
     display: flex;
@@ -283,22 +266,5 @@ export default defineComponent({
   .playlist .song.playing {
     color: #FFF;
     background-image: linear-gradient(to right, #CC2E5D, #FF5858);
-  }
-  .time_slider {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  @media only screen and (max-width: 425px) {
-    .music-player {
-      max-width: 100%;
-    }
-    .current-time {
-      margin-right: 0.5rem;
-    }
-    .duration-time {
-      margin-left: 0.5rem;
-    }
   }
 </style>
