@@ -9,17 +9,10 @@
           <h2 class="song-title">{{ current.title }}</h2>
           <span class="song-artist">{{ current.artist }}</span>
         </div>
-        <div class="music-player">
-          <div class="time_slider">
-            <span class="current-time">{{displayCurrentTime}}</span>
-            <AudioSlider :songDuration="songDuration" :seek="seek" :currentTime="currentTime"></AudioSlider>
-            <span class="duration-time">{{dispayDuration}}</span>
-          </div>
-          <div class="skip-wrapper">
-            <button class="next skip-5" @click="skip5s('backward')">5s <i class="fas fa-angle-double-left"></i></button>
-            <button class="next skip-5" @click="skip5s('forward')"><i class="fas fa-angle-double-right"></i> 5s</button>
-          </div>
-        </div>
+        <MusicPlayer :displayCurrentTime="displayCurrentTime" :displayDuration="displayDuration"
+                     @skip5s="skip5s">
+          <AudioSlider :songDuration="songDuration" :seek="seek" :currentTime="currentTime"></AudioSlider>
+        </MusicPlayer>
         <div class="controls">
           <button class="prev" @click="previousSong"><i class="fas fa-backward"></i></button>
           <button class="play" v-if="!isPlaying" @click="playSong"><i class="fas fa-play"></i></button>
@@ -41,19 +34,18 @@
 </template>
 
 <script>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, defineComponent } from 'vue'
 import songList from '@/songList'
 import AudioSlider from "@/components/AudioSlider";
-export default {
+import usePrettify from '@/modules/prettify'
+import MusicPlayer from "@/components/MusicPlayer";
+
+export default defineComponent({
   name: 'App',
+  components: { MusicPlayer, AudioSlider },
   setup () {
-    // prettify time from seconds to "mins:seconds"
-    function prettyTime(time) {
-      let mins = Math.floor(time / 60)
-      let seconds = Math.round(time % 60)
-      seconds = seconds < 10 ? '0' + seconds : seconds
-      return `${mins}:${seconds}`
-    }
+    const {prettyTime} = usePrettify()
+
     // current song from the "songs" array
     const current = ref({})
     // index to keep track of "songs" array
@@ -65,24 +57,25 @@ export default {
     // the current time in seconds of the song's position
     const currentTime = ref(0)
     // prettify "currentTime"
-    const displayCurrentTime = computed(function () {
+    const displayCurrentTime = computed(() => {
       return prettyTime(currentTime.value)
     })
     // the total length of the song
     const songDuration = ref(0)
+
     // prettify "songDuration"
-    const dispayDuration = computed(function () {
+    const displayDuration = computed(() => {
       return prettyTime(songDuration.value)
     })
     // all the songs in the array
     const songs = ref([...songList])
 
     // as the song proceeds, update the currentTime of the song
-    player.value.addEventListener('timeupdate', function () {
+    player.value.addEventListener('timeupdate', () => {
       currentTime.value = player.value.currentTime
     })
     // when the song changes, the songDuration variable changes
-    watch(current, function () {
+    watch(current, () => {
       player.value.onloadedmetadata = function() {
         // update the duration variable to the length of the selected song
         songDuration.value = player.value.duration
@@ -94,7 +87,7 @@ export default {
     player.value.src = current.value.src
 
     // using the Web Audio API object "player", we play the song by calling the .play() method on the object
-    function playSong (song = null) {
+    const playSong = (song = null) => {
       if (song.src) {
         current.value = song
         player.value.src = song.src
@@ -108,8 +101,8 @@ export default {
       isPlaying.value = true
     }
     // switch to the next song in the array
-    function nextSong () {
-     index.value++
+    const nextSong = () => {
+      index.value++
       // if the index has gone beyond the songs array length, the set index to first song in the array
       if (index.value > songs.value.length - 1) {
         index.value = 0
@@ -117,11 +110,11 @@ export default {
       current.value = songs.value[index.value]
       playSong(current.value)
     }
-    function pauseSong () {
+    const pauseSong = () => {
       player.value.pause()
       isPlaying.value = false
     }
-    function previousSong () {
+    const previousSong = () => {
       index.value--
       // if the index has gone to negative integer, then set the index to last song in the array
       if (index.value < 0) {
@@ -131,23 +124,24 @@ export default {
       playSong(current.value)
     }
     // skip (either backwards or forwards) the current song by 5 seconds
-    function skip5s(skip) {
+    const skip5s = (skip) => {
       if (skip === 'forward') player.value.currentTime += 5
       else player.value.currentTime -= 5
     }
     // when user makes changes to the slider, we call this function
-    function seek(event) {
+    const seek = (event) => {
       // change the "currentTime" property of the Web Audio API object
       player.value.currentTime = event.target.value
       // change the "currentTime" ref variable to target time
       currentTime.value = event.target.value
     }
+
     return {
       current,
       isPlaying,
       songs,
       songDuration,
-      dispayDuration,
+      displayDuration,
       currentTime,
       displayCurrentTime,
       seek,
@@ -156,87 +150,22 @@ export default {
       nextSong,
       previousSong,
       skip5s,
-      AudioSlider,
       index
     }
-  },
-  // data () {
-  //   return {
-  //     current: {},
-  //     index: 0,
-  //     isPlaying: false,
-  //     songs: [
-  //       {
-  //         title: 'A Window to the past',
-  //         artist: 'John Williams',
-  //         src: require('./assets/a-window-to-the-past.mp3')
-  //       },
-  //       {
-  //         title: 'Nobody But Me',
-  //         artist: 'The Human Beinz',
-  //         src: require('./assets/nobody-but-me.mp3')
-  //       },
-  //       {
-  //         title: 'The Other Side',
-  //         artist: 'Hugh Jackman & Zac Efron',
-  //         src: require('./assets/the-other-side.mp3')
-  //       }
-  //     ],
-  //     player: new Audio()
-  //   }
-  // },
-  // created () {
-  //   this.current = this.songs[this.index]
-  //   this.player.src = this.current.src
-  //   // this.player.play()
-  // },
-  // methods: {
-    // play (song = null) {
-    //   if (song.src) {
-    //     this.current = song
-    //     this.player.src = song.src
-    //   }
-    //   this.player.play()
-    //   // when current song ends, automatically switch to the next song in the songs array
-    //   this.player.addEventListener('ended', () => {
-    //     this.next()
-    //   })
-    //   this.isPlaying = true
-    // },
-    // pause () {
-    //   this.player.pause()
-    //   this.isPlaying = false
-    // },
-    // next () {
-    //   this.index++
-    //   // if the index has gone beyond the songs array length, the set index to first song in the array
-    //   if (this.index > this.songs.length - 1) {
-    //     this.index = 0
-    //   }
-    //   this.current = this.songs[this.index]
-    //   this.play(this.current)
-    // },
-    // previous () {
-    //   this.index--
-    //   // if the index has gone to negative integer, then set the index to last song in the array
-    //   if (this.index < 0) {
-    //     this.index = this.songs.length - 1
-    //   }
-    //   this.current = this.songs[this.index]
-    //   this.play(this.current)
-    // }
-  // }
-}
+  }
+})
 </script>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
   body {
-    font-family: sans-serif;
+    font-family: Poppins, sans-serif;
+    background-color: #212121;
   }
   header {
     display: flex;
@@ -247,6 +176,7 @@ export default {
     color: #FFF;
   }
   main {
+    background-color: white;
     width: 100%;
     max-width: 768px;
     margin: 1rem auto;
@@ -276,11 +206,6 @@ export default {
     align-items: center;
     padding: 30px 15px;
   }
-  .music-player {
-    max-width: 81%;
-    margin: 0 auto;
-    margin-top: 1.5rem;
-  }
   button {
     appearance: none;
     background: none;
@@ -290,12 +215,6 @@ export default {
   }
   button:hover {
     opacity: 0.8;
-  }
-  .skip-wrapper {
-    display: flex;
-    justify-content: space-between;
-    margin: 0 auto;
-    max-width: 30%;
   }
   .play, .pause {
     display: flex;
@@ -320,7 +239,7 @@ export default {
     cursor: pointer;
     outline: none;
     font-size: 1rem;
-    color: #CCC;
+    color: #b1b1b1;
   }
   .playlist {
     padding: 0px 30px;
@@ -339,6 +258,7 @@ export default {
     font-size: 20px;
     font-weight: 700;
     cursor: pointer;
+    border-radius: 9px;
   }
   .playlist .song:hover {
     color: #FF5858;
@@ -346,22 +266,5 @@ export default {
   .playlist .song.playing {
     color: #FFF;
     background-image: linear-gradient(to right, #CC2E5D, #FF5858);
-  }
-  .time_slider {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  @media only screen and (max-width: 425px) {
-    .music-player {
-      max-width: 100%;
-    }
-    .current-time {
-      margin-right: 0.5rem;
-    }
-    .duration-time {
-      margin-left: 0.5rem;
-    }
   }
 </style>
